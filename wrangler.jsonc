@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "remote-mcp-clickup",
+	"name": "mcp-clickup",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-07-02",
 	"compatibility_flags": ["nodejs_compat"],
@@ -24,7 +24,6 @@
 	"vars": {
 		"CLICKUP_KEY": "6HMETrQGzekbqaH2SLYMZGqjcLvxqqy0SMPWLViPf0U=",
 		"DAEMON_KEY": "BXmZfyd1AkqtbgR7QA39VwsORjN8hTacPMuMRGCeavg=",
-		"WORKER_WS_URL": "wss://https://mcp-server-clickup.dionisiusgunadi.workers.dev//agent-ws"
+		"WORKER_WS_URL": "wss://https://mcp-clickup.dionisiusgunadi.workers.dev//agent-ws"
 	}
 }
-	

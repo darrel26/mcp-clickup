@@ -1,5 +1,5 @@
 {
-	"name": "remote-mcp-clickup",
+	"name": "mcp-clickup",
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {

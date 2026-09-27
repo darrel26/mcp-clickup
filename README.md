@@ -53,13 +53,13 @@ Create a `.env` file in `daemon/`:
 # daemon/.env
 ALLOWLIST='["/home/noid/Documents/repositories"]'
 DAEMON_KEY="your-daemon-secret"
-WORKER_WS_URL="wss://remote-mcp-clickup.<your-account>.workers.dev"
+WORKER_WS_URL="wss://mcp-clickup.<your-account>.workers.dev"
 AUDIT_LOG_PATH="./audit.log"
 ```
 
-`WORKER_WS_URL` is the URL of your deployed Cloudflare Worker. After running `npx wrangler deploy`, it becomes `https://remote-mcp-clickup.<account>.workers.dev`. For the daemon's WebSocket client, use the `wss://` scheme without a trailing slash — the `/agent-ws` path is appended automatically.
+`WORKER_WS_URL` is the URL of your deployed Cloudflare Worker. After running `npx wrangler deploy`, it becomes `https://mcp-clickup.<account>.workers.dev`. For the daemon's WebSocket client, use the `wss://` scheme without a trailing slash — the `/agent-ws` path is appended automatically.
 
-Find your worker name in `wrangler.jsonc` (`"name": "remote-mcp-clickup"`). If you're not sure of your account ID, run `npx wrangler whoami`.
+Find your worker name in `wrangler.jsonc` (`"name": "mcp-clickup"`). If you're not sure of your account ID, run `npx wrangler whoami`.
 
 **Security note**: `DAEMON_KEY` must match the `DAEMON_KEY` set on the Worker. The daemon authenticates every WebSocket connection with this key.
 
@@ -76,10 +76,10 @@ After deploying, find your worker URL:
 npx wrangler whoami  # shows account and worker name
 ```
 
-The WebSocket URL is `wss://<worker-name>.<account>.workers.dev` — this is what goes into `WORKER_WS_URL`. For example, if the worker name is `remote-mcp-clickup`:
+The WebSocket URL is `wss://<worker-name>.<account>.workers.dev` — this is what goes into `WORKER_WS_URL`. For example, if the worker name is `mcp-clickup`:
 
 ```bash
-WORKER_WS_URL="wss://remote-mcp-clickup.<account>.workers.dev"
+WORKER_WS_URL="wss://mcp-clickup.<account>.workers.dev"
 ```
 
 ### 4. Start the daemon
