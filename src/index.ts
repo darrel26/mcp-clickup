@@ -64,7 +64,6 @@ function makeHandler(env: Env) {
 }
 
 export class DaemonLink extends DurableObject {
-	private ws: WebSocket | null = null;
 	private pending = new Map<string, { resolve: (v: any) => void; reject: (e: any) => void }>();
 
 	async fetch(request: Request): Promise<Response> {
@@ -82,6 +81,11 @@ export class DaemonLink extends DurableObject {
 		return new Response("Not Found", { status: 404 });
 	}
 
+	private getSocket(): WebSocket | null {
+		const sockets = this.ctx.getWebSockets();
+		return sockets.length > 0 ? sockets[0] : null;
+	}
+
 	webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): void | Promise<void> {
 		const msg = JSON.parse(message as string);
 		if (msg.type === "result") {
@@ -94,20 +98,20 @@ export class DaemonLink extends DurableObject {
 	}
 
 	webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): void | Promise<void> {
-		this.ws = null;
 		for (const [id, p] of this.pending) { p.reject(new Error("daemon offline")); this.pending.delete(id); }
 	}
 
 	webSocketError(ws: WebSocket, error: unknown): void | Promise<void> {
-		this.ws = null;
+		for (const [id, p] of this.pending) { p.reject(new Error("daemon offline")); this.pending.delete(id); }
 	}
 
 	async callTool(tool: string, args: any, timeout = 30000): Promise<any> {
-		if (!this.ws) throw new Error("daemon offline");
+		const socket = this.getSocket();
+		if (!socket) throw new Error("daemon offline");
 		const id = crypto.randomUUID();
 		return new Promise((resolve, reject) => {
 			this.pending.set(id, { resolve, reject });
-			this.ws!.send(JSON.stringify({ type: "call", id, tool, args }));
+			socket.send(JSON.stringify({ type: "call", id, tool, args }));
 			setTimeout(() => {
 				if (this.pending.has(id)) { this.pending.delete(id); reject(new Error("daemon offline")); }
 			}, timeout);
