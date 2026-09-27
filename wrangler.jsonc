@@ -9,6 +9,22 @@
 	"compatibility_date": "2026-07-02",
 	"compatibility_flags": ["nodejs_compat"],
 	"observability": {
-		"enabled": true,
+		"enabled": true
 	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "DAEMON_LINK",
+				"class_name": "DaemonLink",
+				"script_name": "",
+				"environment": ""
+			}
+		]
+	},
+	"vars": {
+		"CLICKUP_KEY": "6HMETrQGzekbqaH2SLYMZGqjcLvxqqy0SMPWLViPf0U=",
+		"DAEMON_KEY": "BXmZfyd1AkqtbgR7QA39VwsORjN8hTacPMuMRGCeavg=",
+		"WORKER_WS_URL": "wss://https://mcp-server-clickup.dionisiusgunadi.workers.dev//agent-ws"
+	}
 }
+	

@@ -1,0 +1,22 @@
+{
+	"name": "clickup-daemon",
+	"version": "1.0.0",
+	"private": true,
+	"scripts": {
+		"dev": "tsx watch src/index.ts",
+		"build": "tsc",
+		"start": "tsx src/index.ts",
+		"type-check": "tsc --noEmit",
+		"lint": "oxlint"
+	},
+	"dependencies": {
+		"ws": "^8.18.0"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.3",
+		"@types/ws": "^8.18.1",
+		"oxlint": "^1.71.0",
+		"tsx": "^4.19.0",
+		"typescript": "6.0.3"
+	}
+}
