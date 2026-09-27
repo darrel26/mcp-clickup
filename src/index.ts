@@ -1,19 +1,20 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
+import { DurableObject } from "cloudflare:workers";
 import { z } from "zod";
 
-type DaemonLinkStub = DurableObjectStub & { callTool: DaemonLink["callTool"] };
+interface DaemonLinkRpc {
+	callTool(tool: string, args: any, timeout?: number): Promise<any>;
+}
 
-let daemonLink: DaemonLinkStub | null = null;
-
-function createServer(): McpServer {
+function createServer(env: Env): McpServer {
+	const daemonLink = env.DAEMON_LINK.getByName("daemon-link") as unknown as DaemonLinkRpc;
 	const server = new McpServer({ name: "Clickup MCP Server", version: "1.0.0" });
 
 	server.registerTool(
 		"read_file",
 		{ inputSchema: z.object({ path: z.string() }) },
 		async ({ path }) => {
-			if (!daemonLink) return { content: [{ type: "text", text: "daemon offline" }] };
 			const result = await daemonLink.callTool("read_file", { path });
 			return { content: [{ type: "text", text: JSON.stringify(result) }] };
 		}
@@ -23,7 +24,6 @@ function createServer(): McpServer {
 		"write_file",
 		{ inputSchema: z.object({ path: z.string(), content: z.string() }) },
 		async ({ path, content }) => {
-			if (!daemonLink) return { content: [{ type: "text", text: "daemon offline" }] };
 			const result = await daemonLink.callTool("write_file", { path, content });
 			return { content: [{ type: "text", text: JSON.stringify(result) }] };
 		}
@@ -33,7 +33,6 @@ function createServer(): McpServer {
 		"list_dir",
 		{ inputSchema: z.object({ path: z.string() }) },
 		async ({ path }) => {
-			if (!daemonLink) return { content: [{ type: "text", text: "daemon offline" }] };
 			const result = await daemonLink.callTool("list_dir", { path });
 			return { content: [{ type: "text", text: JSON.stringify(result) }] };
 		}
@@ -43,7 +42,6 @@ function createServer(): McpServer {
 		"run_git",
 		{ inputSchema: z.object({ cwd: z.string(), args: z.array(z.string()), input: z.string().optional() }) },
 		async ({ cwd, args, input }) => {
-			if (!daemonLink) return { content: [{ type: "text", text: "daemon offline" }] };
 			const result = await daemonLink.callTool("run_git", { cwd, args, input });
 			return { content: [{ type: "text", text: JSON.stringify(result) }] };
 		}
@@ -53,7 +51,6 @@ function createServer(): McpServer {
 		"exec_command",
 		{ inputSchema: z.object({ command: z.string(), cwd: z.string(), args: z.array(z.string()) }) },
 		async ({ command, cwd, args }) => {
-			if (!daemonLink) return { content: [{ type: "text", text: "daemon offline" }] };
 			const result = await daemonLink.callTool("exec_command", { command, cwd, args });
 			return { content: [{ type: "text", text: JSON.stringify(result) }] };
 		}
@@ -62,20 +59,24 @@ function createServer(): McpServer {
 	return server;
 }
 
-const handler = createMcpHandler(createServer, { route: "/mcp" });
+function makeHandler(env: Env) {
+	return createMcpHandler(() => createServer(env), { route: "/mcp" });
+}
 
-export class DaemonLink {
+export class DaemonLink extends DurableObject {
 	private ws: WebSocket | null = null;
 	private pending = new Map<string, { resolve: (v: any) => void; reject: (e: any) => void }>();
 
-	constructor(private state: DurableObjectState) {}
-
-	async fetch(request: Request): Promise<Response | void> {
+	async fetch(request: Request): Promise<Response> {
 		if (request.headers.get("Upgrade") === "websocket") {
+			const auth = request.headers.get("Authorization");
+			if (!auth || auth !== `Bearer ${this.env.DAEMON_KEY}`) {
+				return new Response("Unauthorized", { status: 401 });
+			}
 			const pair = new WebSocketPair();
 			const server = pair[0];
 			const client = pair[1];
-			this.state.acceptWebSocket(server);
+			this.ctx.acceptWebSocket(server);
 			return new Response(null, { status: 101, webSocket: client });
 		}
 		return new Response("Not Found", { status: 404 });
@@ -116,8 +117,6 @@ export class DaemonLink {
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext) {
-		daemonLink ??= env.DAEMON_LINK.getByName("daemon-link") as DaemonLinkStub;
-
 		const url = new URL(request.url);
 
 		if (url.pathname === "/agent-ws") {
@@ -127,10 +126,37 @@ export default {
 
 		const auth = request.headers.get("Authorization");
 		if (url.pathname === "/mcp") {
-			if (auth !== `Bearer ${env.CLICKUP_KEY}`) {
+			if (!auth || !auth.startsWith("Bearer ") || auth.slice(7) !== env.CLICKUP_KEY) {
 				return new Response("Unauthorized", { status: 401 });
 			}
-			return handler(request, env, ctx);
+			const handler = makeHandler(env);
+			if (request.method === "GET") {
+				const stream = new ReadableStream({
+					start(controller) {
+						const keepAlive = setInterval(() => {
+							try {
+								controller.enqueue(new TextEncoder().encode(": keepalive\n\n"));
+							} catch {
+								clearInterval(keepAlive);
+							}
+						}, 25000);
+						request.signal.addEventListener("abort", () => {
+							clearInterval(keepAlive);
+							try {
+								controller.close();
+							} catch {}
+						});
+					},
+				});
+				return new Response(stream, {
+					headers: {
+						"Content-Type": "text/event-stream",
+						"Cache-Control": "no-cache, no-transform",
+						Connection: "keep-alive",
+					},
+				});
+			}
+			return handler.fetch(request, { authInfo: { token: auth.slice(7), clientId: "clickup", scopes: [] } });
 		}
 
 		return new Response("Not Found", { status: 404 });

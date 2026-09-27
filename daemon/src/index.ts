@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { WebSocket } from "ws";
 import { DAEMON_KEY, WORKER_WS_URL } from "./config.js";
 import { handleReadFile, handleWriteFile, handleListDir, handleRunGit, handleExecCommand } from "./tools.js";

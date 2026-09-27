@@ -65,6 +65,12 @@ Find your worker name in `wrangler.jsonc` (`"name": "mcp-clickup"`). If you're n
 
 ### 3. Deploy the worker and get the URL
 
+Set your Cloudflare API token first:
+
+```bash
+export CLOUDFLARE_API_TOKEN="your-cloudflare-api-token"
+```
+
 ```bash
 cd mcp/clickup
 npx wrangler deploy
