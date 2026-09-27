@@ -21,9 +21,15 @@
 			}
 		]
 	},
+	"exports": {
+		"DaemonLink": {
+			"type": "durable-object",
+			"storage": "sqlite"
+		}
+	},
 	"vars": {
 		"CLICKUP_KEY": "6HMETrQGzekbqaH2SLYMZGqjcLvxqqy0SMPWLViPf0U=",
 		"DAEMON_KEY": "BXmZfyd1AkqtbgR7QA39VwsORjN8hTacPMuMRGCeavg=",
-		"WORKER_WS_URL": "wss://https://mcp-clickup.dionisiusgunadi.workers.dev//agent-ws"
+		"WORKER_WS_URL": "wss://mcp-clickup.dionisiusgunadi.workers.dev"
 	}
 }
